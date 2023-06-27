@@ -1,69 +1,50 @@
-# Employee Stock Option Plan Smart Contract Challenge
+# Employee Stock Option Plan
 
-## Task
-You are tasked with designing and implementing a smart contract for an Employee Stock Option Plan (ESOP) on the Ethereum blockchain. The ESOP allows a company to grant stock options to its employees, define vesting schedules, and enable employees to exercise their vested options. Your goal is to create a secure, efficient, and user-friendly smart contract, named `EmployeeStockOptionPlan`, that manages the ESOP.
+This smart contract is an Employee Stock Option Plan implemented in Solidity. It allows for the management and granting of stock options to employees. The contract is designed to be owned by an address and provides various functions for adding employees, granting stock options, setting vesting schedules, and managing vested and exercised options.
 
-## Smart Contract Specifications
-- Smart Contract Language: Solidity (version 0.8.0 or higher)
-- Blockchain Platform: Ethereum
+## Contract Details
 
-## Employee Stock Option Plan Functionality
-Implement the following functionalities in the `EmployeeStockOptionPlan` smart contract:
+The contract inherits from the `Ownable` and `ReentrancyGuard` contracts provided by the OpenZeppelin library. It includes the following features:
 
-### 3.1. Granting Stock Options
-- Implement a function, `grantStockOptions`, that allows the company (contract owner) to grant stock options to an employee by specifying their address and the number of options.
-- Emit an event, `StockOptionsGranted`, to log the grant of stock options.
+### Structs
 
-### 3.2. Vesting Schedule
-- Implement a function, `setVestingSchedule`, that allows the company to set the vesting schedule for an employee's options.
+- `Employee`: Represents an employee and contains the following fields:
+  - `stockOptions`: The number of stock options granted to the employee.
+  - `vestingSchedule`: The vesting schedule for the employee's stock options.
 
-### 3.3. Exercising Options
-- Implement a function, `exerciseOptions`, that allows an employee to exercise their vested options.
+### Storage
 
-### 3.4. Tracking Vested and Exercised Options
-- Implement functions, `getVestedOptions` and `getExercisedOptions`, to retrieve the number of vested and exercised options for an employee.
+The contract uses the following mappings for storage:
 
-### 3.5. Security and Permissions
-- Implement appropriate access control to ensure that only authorized employees can exercise their options.
+- `employee`: Maps employee addresses to their corresponding `Employee` struct, allowing retrieval of employee information.
+- `excercisedBalance`: Maps employee addresses to the balance of exercised stock options.
+- `vestingBalance`: Maps employee addresses to the balance of vested stock options.
 
-### 3.6. Ownership and Transferability
-- Implement a function, `transferOptions`, that allows employees to transfer their vested options to other eligible employees, subject to any transfer restrictions specified in the vesting schedule.
+### Functions
 
-## Your Task
-Design and implement the `EmployeeStockOptionPlan` smart contract based on the provided skeleton code in the file `EmployeeStockOptionPlan.sol`. Your implementation should fulfill the following requirements:
+The contract provides the following functions:
 
-### 4.1. Functionality
-The smart contract should correctly handle the granting of stock options, setting of vesting schedules, exercising of options, and tracking of vested and exercised options.
+- `addEmployee(address _employeeAddress)`: Adds an employee to the contract by initializing their `Employee` struct with default values.
+- `grantStockOptions(address _employeeAddress, uint256 _stockOptions)`: Grants stock options to an employee by increasing their `stockOptions` field. If the employee's vesting schedule is not set, it is set to infinity.
+- `setVestingSchedule(address _employeeAddress, uint256 _vestingSchedule)`: Sets the vesting schedule for an employee. The vesting schedule must be in the future, and the employee must exist.
+- `getBlockTimeStamp()`: Returns the current block timestamp.
+- `vestingCountdown(address _employeeAddress)`: Returns the remaining time until vesting for an employee's stock options. If the vesting schedule has already passed, it returns 0.
+- `_vest(address _employeeAddress)`: Internal function used to vest the employee's stock options based on the current time.
+- `vestOptions()`: Vests the stock options for the calling employee. Requires that the employee exists and has stock options.
+- `exerciseOptions()`: Exercises the vested stock options for the calling employee.
+- `getVestedOptions(address _employeeAddress)`: Returns the balance of vested stock options for an employee.
+- `getExcercisedOptions(address _employeeAddress)`: Returns the balance of exercised stock options for an employee.
+- `transferOptions(address _recipient, uint256 _stockOptionsAmount)`: Transfers vested stock options from the calling employee to the recipient address. Requires that the stock option amount is greater than zero, the employee exists, and the employee has sufficient vested balance.
 
-### 4.2. Security
-Ensure the smart contract follows best practices for security, including protection against common attacks like reentrancy, overflow/underflow, and unauthorized access.
+### Events
 
-### 4.3. Documentation
-Include comprehensive documentation that explains the design decisions, contract architecture, and usage instructions. Code comments should be provided where necessary to improve code readability and maintainability.
+The contract emits the following event:
 
-Use the provided skeleton code in the file `EmployeeStockOptionPlan.sol` as a starting point for your implementation. Feel free to modify and expand the code as needed to fulfill the requirements.
+- `StockOptionsGranted(address employee, uint256 stockOptionsAmount)`: Indicates when stock options are granted to an employee, providing the employee's address and the granted amount.
+- `event StockOptionsTransferred(address recpient, uint256 stockOptionAmount)`;
+- `event stockOptionsExcercised(address recipient)`;
 
-## Evaluation Criteria
-Your solution will be evaluated based on the following criteria:
+## Getting Started
 
-### 5.1. Correctness
-The smart contract should implement the specified functionality accurately and without any critical bugs.
+To use this contract, you can deploy it to an Ethereum network or interact with it through a compatible blockchain interface such as Remix, Truffle, or Hardhat.
 
-### 5.2. Documentation
-Include comprehensive documentation that explains the design decisions, contract architecture, and usage instructions. Code comments should be provided where necessary to improve code readability and maintainability.
-
-Please note that the provided skeleton code is a starting point and may require further modifications and additions based on your implementation strategy and requirements.
-
-## Submission Guidelines
-Please follow the below guidelines for your submission:
-
-1. Fork this repository.
-2. Create a new branch for your solution.
-3. Implement your solution in the file `EmployeeStockOptionPlan.sol`.
-4. Provide the required documentation and instructions.
-5. Commit and push your changes to your forked repository.
-6. Submit a pull request (PR) to this repository.
-
-Please make sure to include all the necessary files and information in your submission.
-
-Good luck with your implementation! If you have any questions, feel free to ask.
