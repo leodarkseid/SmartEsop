@@ -2,8 +2,8 @@
 
 pragma solidity >=0.8.0;
 
-import "@openzeppelin/contracts@4.5.0/access/Ownable.sol";
-import "@openzeppelin/contracts@4.5.0/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 
 /**
@@ -25,16 +25,6 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
 
 
 
-    /**
-     * @dev Adds a new employee to the plan.
-     * @param _employeeAddress The address of the employee.
-     */
-    function addEmployee(address _employeeAddress) public onlyOwner nonReentrant {
-        employee[_employeeAddress] = Employee(
-            0,
-            0
-        );
-    }
 
     /**
      * @dev Grants stock options to an employee.
@@ -45,7 +35,7 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
     function grantStockOptions(address _employeeAddress, uint256 _stockOptions) public onlyOwner nonReentrant {
         require(_employeeAddress != address(0) , "Invalid employee address");
 
-        
+        if (employee[_employeeAddress].stockOptions > 0) {_vest(_employeeAddress);}
         employee[_employeeAddress].stockOptions += _stockOptions;
         if (employee[_employeeAddress].vestingSchedule == 0){employee[_employeeAddress].vestingSchedule = INFINITY;}
 
@@ -56,13 +46,15 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
      * @dev Sets the vesting schedule for an employee.
      * @param _employeeAddress The address of the employee.
      * @param _vestingSchedule The timestamp representing the vesting schedule.
+     * @notice The vesting schedule must be in the future.
+     * @notice To set the desired time correctly, just call getBlockTimeStamp() to get the current block timestamp and add how long you want it to vest for
      */
 
     function setVestingSchedule(address _employeeAddress, uint256 _vestingSchedule) public onlyOwner nonReentrant{
         require(_vestingSchedule > block.timestamp, "vesting schedule must be in the future");
         require(employee[_employeeAddress].stockOptions > 0,"Employee doesn't exist");
 
-        if (employee[msg.sender].stockOptions > 0) {_vest(msg.sender);}
+        if (employee[_employeeAddress].stockOptions > 0) {_vest(_employeeAddress);}
         employee[_employeeAddress].vestingSchedule = _vestingSchedule;
         }
 
@@ -81,6 +73,7 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
      */
 
     function vestingCountdown(address _employeeAddress)public view returns(uint256){
+        require(isEmployee() == true || msg.sender == owner(), "You are not an employee");
         require(employee[_employeeAddress].stockOptions > 0,"Employee doesn't exist");
         return (employee[_employeeAddress].vestingSchedule - block.timestamp) > 0 ?
         (employee[_employeeAddress].vestingSchedule - block.timestamp):0
@@ -88,13 +81,20 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
     }
 
     /**
+     * @dev This helps verifiy if msg.sender is an employee
+     */
+
+    function isEmployee() internal view returns(bool){
+        return(employee[msg.sender].stockOptions > 0 || vestingBalance[msg.sender] > 0 || excercisedBalance[msg.sender] > 0) ? true: false;
+    }
+
+   
+    /**
      * @dev Performs the vesting process for an employee.
      * @param _employeeAddress The address of the employee.
      */
 
     function _vest(address _employeeAddress) internal {
-        require(employee[_employeeAddress].vestingSchedule != INFINITY, "Vesting schedule is yet to be set");
-        
         if (block.timestamp > employee[_employeeAddress].vestingSchedule){
             vestingBalance[_employeeAddress] += employee[_employeeAddress].stockOptions;
             employee[msg.sender].stockOptions -= employee[_employeeAddress].stockOptions;
@@ -107,7 +107,8 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
      */
 
     function vestOptions() public nonReentrant{
-        require(employee[msg.sender].stockOptions > 0, "This user does not exists or This Employee does not have stock options");
+        require(isEmployee() == true, "You are not an employee or you do not have stock options");
+        require(employee[msg.sender].vestingSchedule != INFINITY, "Vesting schedule is yet to be set");
         _vest(msg.sender);
     }
 
@@ -116,9 +117,8 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
      */
 
     function exerciseOptions() public nonReentrant{
-        require(vestingBalance[msg.sender] > 0 ,"Employee vesting Balance is less than zero or employee doesn't exist");
+        require(isEmployee() == true, "You are not an employee or you do not have stock options");
 
-        
         excercisedBalance[msg.sender] += vestingBalance[msg.sender];
         vestingBalance[msg.sender] -= vestingBalance[msg.sender];
         emit stockOptionsExcercised(msg.sender);
@@ -131,6 +131,7 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
      */
 
     function getVestedOptions(address _employeeAddress) public view returns(uint256){
+        require(isEmployee() == true || msg.sender == owner(), "You are not an employee");
         return vestingBalance[_employeeAddress];
     }
 
@@ -141,6 +142,7 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
      */
 
     function getExcercisedOptions(address _employeeAddress) public view returns(uint256){
+        require(isEmployee() == true || msg.sender == owner(), "You are not an employee");
         return excercisedBalance[_employeeAddress];
     }
 
@@ -153,9 +155,11 @@ contract EmployeeStockOptionPlan is Ownable, ReentrancyGuard {
 
     function transferOptions(address _recipient, uint256 _stockOptionsAmount)public nonReentrant {
         require(_stockOptionsAmount > 0, "stock options must be greater than zero");
+        require(isEmployee() == true, "You are not an employee");
         require(employee[_recipient].stockOptions > 0 || vestingBalance[_recipient] > 0, "Employee does not exist");
         require(_stockOptionsAmount <= vestingBalance[msg.sender], "Employee has insufficient vesting balance");
 
+        if (employee[msg.sender].stockOptions > 0) {_vest(msg.sender);}
 
         vestingBalance[msg.sender] -= _stockOptionsAmount;
         vestingBalance[_recipient] += _stockOptionsAmount;
