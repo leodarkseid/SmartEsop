@@ -1,6 +1,7 @@
 # Employee Stock Option Plan
 
 This smart contract is an Employee Stock Option Plan implemented in Solidity. It allows for the management and granting of stock options to employees. The contract is designed to be owned by an address and provides various functions for adding employees, granting stock options, setting vesting schedules, and managing vested and exercised options.
+This contract was also designed to allow Stock Options to be allocated as many times as possible
 
 ## Contract Details
 
@@ -41,10 +42,36 @@ The contract provides the following functions:
 The contract emits the following event:
 
 - `StockOptionsGranted(address employee, uint256 stockOptionsAmount)`: Indicates when stock options are granted to an employee, providing the employee's address and the granted amount.
-- `event StockOptionsTransferred(address recpient, uint256 stockOptionAmount)`;
-- `event stockOptionsExcercised(address recipient)`;
 
 ## Getting Started
 
 To use this contract, you can deploy it to an Ethereum network or interact with it through a compatible blockchain interface such as Remix, Truffle, or Hardhat.
 
+## Security Features
+1. Ownable: The contract uses the Ownable module from the OpenZeppelin library, which provides a modifier to restrict access to certain functions only to the contract owner.
+
+2. ReentrancyGuard: The contract uses the ReentrancyGuard module from the OpenZeppelin library, which protects against reentrancy attacks by preventing multiple function calls from being executed simultaneously.
+
+3. Access Control: The contract includes access control mechanisms to ensure that only the contract owner can perform certain operations, such as granting stock options and setting vesting schedules.
+
+4. Input Validation: The contract includes various input validations to ensure that only valid operations can be performed. For example, when granting stock options, the contract checks for a valid employee address and ensures that the vesting schedule is set to infinity if it hasn't been set yet.
+
+5. Vesting Schedule: The contract allows employees to set a vesting schedule for their stock options. The vesting schedule ensures that the stock options become available for exercise only after a certain period of time.
+
+6. Vesting Process: The contract includes a vesting process that automatically releases vested stock options to employees when the vesting period has passed. This process helps enforce the agreed-upon vesting schedules and prevents unauthorized access to stock options.
+
+7. Transferability: The contract allows vested stock options to be transferred from one employee to another. This feature provides flexibility for employees to trade or distribute their vested stock options among themselves.
+
+8. This contract also uses a version of solidity that has inbuilt protection against underflows and overflows so there is no need to use third party libraries like safemath from openzepellin
+
+9. This contract also requires all necessary functions can only be accessed by employees plus used internal function to save gas in relative to using Modifiers
+10. This contract implements a system where vesting schedule is set to a value of infinity to prevent stock options from being claimed when vesting schedule hasn't been set
+
+11. This contract also automatically helps employee vest their stock options to prevent the goal post from being shifted by the employer by calling the internal _vest() function, this is also called in other necessary functions to make it easier for employee options to be vested
+
+## Testing
+
+The testing script was written with typescript you can use whatever framework you like.
+It's recommended to use Hardhat, Mocha and Chai. 
+Go through the normal process of setting up your hardhat environment then import the test into your test directory then you can run the test
+Note the testis designed to run concurrently, so individual instance might not give expected output
